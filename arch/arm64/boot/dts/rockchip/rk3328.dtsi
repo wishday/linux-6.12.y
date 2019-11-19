@@ -1075,6 +1075,13 @@
 		status = "disabled";
 	};
 
+	dfi: dfi@ff790000 {
+		reg = <0x00 0xff790000 0x00 0x400>;
+		compatible = "rockchip,rk3328-dfi";
+		rockchip,pmu = <&grf>;
+		status = "disabled";
+	};
+
 	gic: interrupt-controller@ff811000 {
 		compatible = "arm,gic-400";
 		#interrupt-cells = <3>;
