@@ -2183,6 +2183,11 @@ static struct page *its_allocate_prop_table(gfp_t gfp_flags)
 {
 	struct page *prop_page;
 
+	if (gic_rdists->flags & RDIST_FLAGS_FORCE_NO_LOCAL_CACHE) {
+		pr_debug("ITS ALLOCATE PROP WORKAROUND\n");
+		gfp_flags |= GFP_DMA;
+	}
+
 	prop_page = alloc_pages(gfp_flags, get_order(LPI_PROPBASE_SZ));
 	if (!prop_page)
 		return NULL;
@@ -2305,6 +2310,7 @@ static int its_setup_baser(struct its_node *its, struct its_baser *baser,
 	u64 baser_phys, tmp;
 	u32 alloc_pages, psz;
 	struct page *page;
+	gfp_t gfp_flags;
 	void *base;
 
 	psz = baser->psz;
@@ -2317,7 +2323,10 @@ static int its_setup_baser(struct its_node *its, struct its_baser *baser,
 		order = get_order(GITS_BASER_PAGES_MAX * psz);
 	}
 
-	page = alloc_pages_node(its->numa_node, GFP_KERNEL | __GFP_ZERO, order);
+	gfp_flags = GFP_KERNEL | __GFP_ZERO;
+	if (gic_rdists->flags & RDIST_FLAGS_FORCE_NO_LOCAL_CACHE)
+		gfp_flags |= GFP_DMA;
+	page = alloc_pages_node(its->numa_node, gfp_flags, order);
 	if (!page)
 		return -ENOMEM;
 
@@ -2957,6 +2966,10 @@ static struct page *its_allocate_pending_table(gfp_t gfp_flags)
 {
 	struct page *pend_page;
 
+	if (gic_rdists->flags & RDIST_FLAGS_FORCE_NO_LOCAL_CACHE) {
+		gfp_flags |= GFP_DMA;
+	}
+
 	pend_page = alloc_pages(gfp_flags | __GFP_ZERO,
 				get_order(LPI_PENDBASE_SZ));
 	if (!pend_page)
@@ -3305,7 +3318,12 @@ static bool its_alloc_table_entry(struct its_node *its,
 
 	/* Allocate memory for 2nd level table */
 	if (!table[idx]) {
-		page = alloc_pages_node(its->numa_node, GFP_KERNEL | __GFP_ZERO,
+		gfp_t gfp_flags = GFP_KERNEL | __GFP_ZERO;
+		if (gic_rdists->flags & RDIST_FLAGS_FORCE_NO_LOCAL_CACHE) {
+			gfp_flags |= GFP_DMA;
+		}
+
+		page = alloc_pages_node(its->numa_node, gfp_flags,
 					get_order(baser->psz));
 		if (!page)
 			return false;
@@ -3389,6 +3407,7 @@ static struct its_device *its_create_device(struct its_node *its, u32 dev_id,
 	unsigned long *lpi_map = NULL;
 	unsigned long flags;
 	u16 *col_map = NULL;
+	gfp_t gfp_flags;
 	void *itt;
 	int lpi_base;
 	int nr_lpis;
@@ -3401,7 +3420,11 @@ static struct its_device *its_create_device(struct its_node *its, u32 dev_id,
 	if (WARN_ON(!is_power_of_2(nvecs)))
 		nvecs = roundup_pow_of_two(nvecs);
 
-	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+	gfp_flags = GFP_KERNEL;
+	if (gic_rdists->flags & RDIST_FLAGS_FORCE_NO_LOCAL_CACHE)
+		gfp_flags |= GFP_DMA;
+
+	dev = kzalloc(sizeof(*dev), gfp_flags);
 	/*
 	 * Even if the device wants a single LPI, the ITT must be
 	 * sized as a power of two (and you need at least one bit...).
@@ -3409,7 +3432,7 @@ static struct its_device *its_create_device(struct its_node *its, u32 dev_id,
 	nr_ites = max(2, nvecs);
 	sz = nr_ites * (FIELD_GET(GITS_TYPER_ITT_ENTRY_SIZE, its->typer) + 1);
 	sz = max(sz, ITS_ITT_ALIGN) + ITS_ITT_ALIGN - 1;
-	itt = kzalloc_node(sz, GFP_KERNEL, its->numa_node);
+	itt = kzalloc_node(sz, gfp_flags, its->numa_node);
 	if (alloc_lpis) {
 		lpi_map = its_lpi_alloc(nvecs, &lpi_base, &nr_lpis);
 		if (lpi_map)
@@ -4771,6 +4794,21 @@ static bool __maybe_unused its_enable_quirk_hip07_161600802(void *data)
 	return true;
 }
 
+static bool __maybe_unused its_enable_rk3568001(void *data)
+{
+	struct its_node *its = data;
+
+	if (!of_machine_is_compatible("rockchip,rk3566") &&
+	    !of_machine_is_compatible("rockchip,rk3568"))
+		return false;
+
+	its->flags |= ITS_FLAGS_FORCE_NON_SHAREABLE;
+	gic_rdists->flags |= RDIST_FLAGS_FORCE_NON_SHAREABLE |
+			     RDIST_FLAGS_FORCE_NO_LOCAL_CACHE;
+
+	return true;
+}
+
 static bool __maybe_unused its_enable_rk3588001(void *data)
 {
 	struct its_node *its = data;
@@ -4856,6 +4894,12 @@ static const struct gic_quirk its_quirks[] = {
 	},
 #endif
 #ifdef CONFIG_ROCKCHIP_ERRATUM_3588001
+	{
+		.desc   = "ITS: Rockchip erratum RK3568001",
+		.iidr   = 0x0201743b,
+		.mask   = 0xffffffff,
+		.init   = its_enable_rk3568001,
+	},
 	{
 		.desc   = "ITS: Rockchip erratum RK3588001",
 		.iidr   = 0x0201743b,
@@ -5125,6 +5169,7 @@ static int __init its_probe_one(struct its_node *its)
 {
 	u64 baser, tmp;
 	struct page *page;
+	gfp_t gfp_flags;
 	u32 ctlr;
 	int err;
 
@@ -5160,7 +5205,9 @@ static int __init its_probe_one(struct its_node *its)
 		}
 	}
 
-	page = alloc_pages_node(its->numa_node, GFP_KERNEL | __GFP_ZERO,
+	gfp_flags = GFP_KERNEL | __GFP_ZERO | GFP_DMA;
+
+	page = alloc_pages_node(its->numa_node, gfp_flags,
 				get_order(ITS_CMD_QUEUE_SZ));
 	if (!page) {
 		err = -ENOMEM;
