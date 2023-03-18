@@ -17,6 +17,7 @@
 #include <linux/delay.h>
 #include <linux/ethtool.h>
 #include <linux/phy.h>
+#include <linux/of.h>
 #include <linux/if_vlan.h>
 #include <linux/in.h>
 #include <linux/io.h>
@@ -175,6 +176,7 @@ enum rtl_registers {
 	MAR0		= 8,	/* Multicast filter. */
 	CounterAddrLow		= 0x10,
 	CounterAddrHigh		= 0x14,
+	CustomLED	= 0x18,
 	TxDescStartAddrLow	= 0x20,
 	TxDescStartAddrHigh	= 0x24,
 	TxHDescStartAddrLow	= 0x28,
@@ -5371,6 +5373,22 @@ static bool rtl_aspm_is_safe(struct rtl8169_private *tp)
 	return false;
 }
 
+static int rtl_led_configuration(struct rtl8169_private *tp)
+{
+	u32 led_data;
+	int ret;
+
+	ret = of_property_read_u32(tp->pci_dev->dev.of_node,
+				   "realtek,led-data", &led_data);
+
+	if (ret)
+		return ret;
+
+	RTL_W16(tp, CustomLED, led_data);
+
+	return 0;
+}
+
 static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	struct rtl8169_private *tp;
@@ -5539,6 +5557,7 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	if (!tp->counters)
 		return -ENOMEM;
 
+	rtl_led_configuration(tp);
 	pci_set_drvdata(pdev, tp);
 
 	rc = r8169_mdio_register(tp);
