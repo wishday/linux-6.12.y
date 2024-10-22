@@ -93,7 +93,7 @@ void rtl8126_eeprom_cleanup(struct rtl8126_private *tp)
         rtl8126_lower_clock(tp, &x);
 }
 
-int rtl8126_eeprom_cmd_done(struct rtl8126_private *tp)
+static int rtl8126_eeprom_cmd_done(struct rtl8126_private *tp)
 {
         u8 x;
         int i;
