@@ -66,7 +66,11 @@ struct rtl8125_private;
 struct RxDescV3;
 
 int rtl8125_get_ts_info(struct net_device *netdev,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,11,0)
+                        struct kernel_ethtool_ts_info *info);
+#else
                         struct ethtool_ts_info *info);
+#endif
 
 void rtl8125_ptp_reset(struct rtl8125_private *tp);
 void rtl8125_ptp_init(struct rtl8125_private *tp);
