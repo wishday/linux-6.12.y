@@ -14728,7 +14728,11 @@ rtl8125_devname_configuration(struct rtl8125_private *tp)
         if (ret)
                 return ret;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,8,0)
+        strscpy(tp->dev->name, devname, IFNAMSIZ);
+#else
         strlcpy(tp->dev->name, devname, IFNAMSIZ);
+#endif
 
         return 0;
 }
