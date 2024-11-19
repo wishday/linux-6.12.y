@@ -357,7 +357,11 @@ static void rtl8126_ptp_enable_config(struct rtl8126_private *tp)
 }
 
 int rtl8126_get_ts_info(struct net_device *netdev,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,11,0)
+                        struct kernel_ethtool_ts_info *info)
+#else
                         struct ethtool_ts_info *info)
+#endif
 {
         struct rtl8126_private *tp = netdev_priv(netdev);
 
