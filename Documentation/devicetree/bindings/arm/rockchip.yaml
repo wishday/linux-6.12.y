@@ -822,6 +822,7 @@ properties:
         items:
           - const: radxa,e52c
           - const: rockchip,rk3582
+          - const: rockchip,rk3588s
 
       - description: Radxa Rock
         items:
