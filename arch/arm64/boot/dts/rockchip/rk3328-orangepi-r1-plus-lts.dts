@@ -14,6 +14,13 @@
 	compatible = "xunlong,orangepi-r1-plus-lts", "rockchip,rk3328";
 };
 
+&dmc_opp_table {
+	/delete-node/ opp-798000000;
+	/delete-node/ opp-840000000;
+	/delete-node/ opp-924000000;
+	/delete-node/ opp-1056000000;
+};
+
 &gmac2io {
 	phy-handle = <&yt8531c>;
 	tx_delay = <0x19>;

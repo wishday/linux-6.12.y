@@ -9,6 +9,7 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/leds/common.h>
 #include "rk3328.dtsi"
+#include "rk3328-dram-dmc.dtsi"
 
 / {
 	model = "Xunlong Orange Pi R1 Plus";
@@ -106,6 +107,10 @@
 
 &cpu3 {
 	cpu-supply = <&vdd_arm>;
+};
+
+&dfi {
+	status = "okay";
 };
 
 &display_subsystem {

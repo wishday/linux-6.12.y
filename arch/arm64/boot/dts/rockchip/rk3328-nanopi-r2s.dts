@@ -9,6 +9,7 @@
 #include <dt-bindings/leds/common.h>
 #include <dt-bindings/gpio/gpio.h>
 #include "rk3328.dtsi"
+#include "rk3328-dram-dmc.dtsi"
 
 / {
 	model = "FriendlyElec NanoPi R2S";
@@ -140,6 +141,10 @@
 
 &cpu3 {
 	cpu-supply = <&vdd_arm>;
+};
+
+&dfi {
+	status = "okay";
 };
 
 &display_subsystem {
