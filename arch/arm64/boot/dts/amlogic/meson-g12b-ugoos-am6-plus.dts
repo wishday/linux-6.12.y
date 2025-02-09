@@ -11,50 +11,53 @@
 #include <dt-bindings/sound/meson-g12a-tohdmitx.h>
 
 / {
-	compatible = "azw,gtking", "amlogic,s922x", "amlogic,g12b";
-	model = "Beelink GT-King Pro";
+	compatible = "ugoos,am6-plus", "amlogic,s922x", "amlogic,g12b";
+	model = "Ugoos AM6 Plus";
 
 	aliases {
 		rtc0 = &rtc;
 		rtc1 = &vrtc;
 	};
 
-	memory@0 {
-		device_type = "memory";
-		reg = <0x0 0x0 0x0 0x80000000>;
-	};
-
 	gpio-keys-polled {
 		compatible = "gpio-keys-polled";
-		#address-cells = <1>;
-		#size-cells = <0>;
 		poll-interval = <100>;
 
 		power-button {
 			label = "power";
 			linux,code = <KEY_POWER>;
-			gpios = <&gpio_ao GPIOAO_3 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpio_ao GPIOAO_6 GPIO_ACTIVE_HIGH>;
 		};
 	};
 
 	leds {
 		compatible = "gpio-leds";
 
-		led-white {
-			label = "power:white";
-			gpios = <&gpio_ao GPIOAO_11 GPIO_ACTIVE_HIGH>;
+		led-green {
+			label = "power:green";
+			gpios = <&gpio_ao GPIOAO_7 GPIO_ACTIVE_HIGH>;
 			default-state = "on";
 		};
 	};
 
+	spdif_dit: audio-codec-1 {
+		#sound-dai-cells = <0>;
+		compatible = "linux,spdif-dit";
+		status = "okay";
+		sound-name-prefix = "DIT";
+	};
+
 	sound {
 		compatible = "amlogic,axg-sound-card";
-		model = "GTKING-PRO";
+		model = "AM6-PLUS";
 		audio-aux-devs = <&tdmout_b>;
 		audio-routing = "TDMOUT_B IN 0", "FRDDR_A OUT 1",
 				"TDMOUT_B IN 1", "FRDDR_B OUT 1",
 				"TDMOUT_B IN 2", "FRDDR_C OUT 1",
-				"TDM_B Playback", "TDMOUT_B OUT";
+				"TDM_B Playback", "TDMOUT_B OUT",
+				"SPDIFOUT_A IN 0", "FRDDR_A OUT 3",
+				"SPDIFOUT_A IN 1", "FRDDR_B OUT 3",
+				"SPDIFOUT_A IN 2", "FRDDR_C OUT 3";
 
 		clocks = <&clkc CLKID_MPLL2>,
 			 <&clkc CLKID_MPLL0>,
@@ -96,7 +99,30 @@
 			};
 		};
 
+		/* spdif hdmi or toslink interface */
 		dai-link-4 {
+			sound-dai = <&spdifout_a>;
+
+			codec-0 {
+				sound-dai = <&spdif_dit>;
+			};
+
+			codec-1 {
+				sound-dai = <&tohdmitx TOHDMITX_SPDIF_IN_A>;
+			};
+		};
+
+		/* spdif hdmi interface */
+		dai-link-5 {
+			sound-dai = <&spdifout_b>;
+
+			codec {
+				sound-dai = <&tohdmitx TOHDMITX_SPDIF_IN_B>;
+			};
+		};
+
+		/* hdmi glue */
+		dai-link-6 {
 			sound-dai = <&tohdmitx TOHDMITX_I2S_OUT>;
 
 			codec {
@@ -104,20 +130,6 @@
 			};
 		};
 	};
-
-        vddgpu: regulator-vddgpu {
-                compatible = "regulator-fixed";
-                regulator-name = "mali";
-                regulator-min-microvolt = <800000>;
-                regulator-max-microvolt = <800000>;
-                vin-supply = <&vcc_5v>;
-                regulator-boot-on;
-                regulator-always-on;
-        };
-};
-
-&mali {
-        mali-supply=<&vddgpu>;
 };
 
 &arb {
@@ -140,16 +152,29 @@
 	status = "okay";
 };
 
+&ir {
+	linux,rc-map-name = "rc-khadas";
+};
+
 &i2c3 {
 	status = "okay";
 	pinctrl-0 = <&i2c3_sda_a_pins>, <&i2c3_sck_a_pins>;
 	pinctrl-names = "default";
 
 	rtc: rtc@51 {
-		compatible = "nxp,pcf8563";
+		compatible = "haoyu,hym8563";
 		reg = <0x51>;
-		wakeup-source;
 	};
+};
+
+&spdifout_a {
+	pinctrl-0 = <&spdif_out_h_pins>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&spdifout_b {
+	status = "okay";
 };
 
 &tdmif_b {
@@ -164,33 +189,37 @@
 	status = "okay";
 };
 
-/* SDIO */
-&sd_emmc_a {
-        //max-frequency = <100000000>;
-        //sd-uhs-sdr50;
-        //max-frequency = <200000000>;
-        //sd-uhs-sdr104;
-        max-frequency = <50000000>;
-        sd-uhs-ddr50;
+&uart_A {
+	status = "okay";
+	pinctrl-0 = <&uart_a_pins>, <&uart_a_cts_rts_pins>;
+	pinctrl-names = "default";
+	uart-has-rtscts;
+
+	bluetooth {
+		compatible = "brcm,bcm43438-bt";
+		shutdown-gpios = <&gpio GPIOX_17 GPIO_ACTIVE_HIGH>;
+		max-speed = <2000000>;
+		clocks = <&wifi32k>;
+	clock-names = "lpo";
+	};
 };
 
-/* SD Card */
-&sd_emmc_b {
-        cap-sd-highspeed;
-        max-frequency = <50000000>;
+&uart_AO {
+	status = "okay";
+	pinctrl-0 = <&uart_ao_a_pins>;
+	pinctrl-names = "default";
 };
 
-/* EMMC */
-&sd_emmc_c {
-        mmc-hs200-1_8v;
-        max-frequency = <200000000>;
+&usb {
+	status = "okay";
+	dr_mode = "host";
+	vbus-supply = <&usb_pwr_en>;
 };
 
-&ethmac {
-	snps,aal;
-	snps,rxpbl = <0x8>;
-	snps,txpbl = <0x8>;
+&usb2_phy0 {
+	phy-supply = <&usb1_pow>;
+};
 
-	rx-fifo-depth = <4096>;
-	tx-fifo-depth = <4096>;
+&usb2_phy1 {
+	phy-supply = <&usb1_pow>;
 };
