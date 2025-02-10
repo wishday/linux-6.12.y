@@ -557,7 +557,7 @@ static const struct dev_pm_ops rk_rng_pm_ops = {
 
 static struct platform_driver rk_rng_driver = {
 	.driver	= {
-		.name	= "rockchip-rng",
+		.name	= "rockchip-rng-bsp",
 #ifdef CONFIG_PM
 		.pm	= &rk_rng_pm_ops,
 #endif
