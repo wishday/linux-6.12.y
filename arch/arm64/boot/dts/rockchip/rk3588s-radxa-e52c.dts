@@ -418,11 +418,11 @@
 
 	pcie {
 		pcie20x1_1_perstn_m1: pcie-1 {
-			rockchip,pins = <4 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <4 RK_PA2 RK_FUNC_GPIO &pcfg_pull_down>;
 		};
 
 		pcie20x1_2_perstn_m0: pcie-2 {
-			rockchip,pins = <3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_down>;
 		};
 	};
 
