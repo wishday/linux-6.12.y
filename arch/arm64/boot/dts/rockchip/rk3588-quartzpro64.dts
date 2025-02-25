@@ -291,14 +291,6 @@
 	status = "okay";
 };
 
-&rknn {
-	status = "okay";
-};
-
-&rknn_mmu {
-	status = "okay";
-};
-
 &i2c2 {
 	status = "okay";
 
