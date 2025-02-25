@@ -34,6 +34,5 @@ extern const struct msi_parent_ops gic_v3_its_msi_parent_ops;
 #define RDIST_FLAGS_PROPBASE_NEEDS_FLUSHING    (1 << 0)
 #define RDIST_FLAGS_RD_TABLES_PREALLOCATED     (1 << 1)
 #define RDIST_FLAGS_FORCE_NON_SHAREABLE        (1 << 2)
-#define RDIST_FLAGS_FORCE_NO_LOCAL_CACHE       (1 << 3)
 
 #endif /* _IRQ_GIC_COMMON_H */
