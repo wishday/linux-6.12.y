@@ -33,7 +33,6 @@
 #include <dt-bindings/power/rk3366-power.h>
 #include <dt-bindings/power/rk3368-power.h>
 #include <dt-bindings/power/rk3399-power.h>
-#include <dt-bindings/power/rk3528-power.h>
 #include <dt-bindings/power/rk3568-power.h>
 #include <dt-bindings/power/rockchip,rk3576-power.h>
 #include <dt-bindings/power/rk3588-power.h>
@@ -52,7 +51,6 @@ struct rockchip_domain_info {
 	int clk_ungate_mask;
 	int mem_status_mask;
 	int repair_status_mask;
-	bool always_on;
 	u32 pwr_offset;
 	u32 mem_offset;
 	u32 req_offset;
@@ -135,20 +133,6 @@ struct rockchip_pmu {
 	.active_wakeup = wakeup,			\
 }
 
-#define DOMAIN_M_A(_name, pwr, status, req, idle, ack, always, wakeup)	\
-{							\
-	.name = _name,					\
-	.pwr_w_mask = (pwr) << 16,			\
-	.pwr_mask = (pwr),				\
-	.status_mask = (status),			\
-	.req_w_mask = (req) << 16,			\
-	.req_mask = (req),				\
-	.idle_mask = (idle),				\
-	.ack_mask = (ack),				\
-	.always_on = always,				\
-	.active_wakeup = wakeup,			\
-}
-
 #define DOMAIN_M_O_R(_name, p_offset, pwr, status, m_offset, m_status, r_status, r_offset, req, idle, ack, wakeup, regulator)	\
 {							\
 	.name = _name,					\
@@ -214,9 +198,6 @@ struct rockchip_pmu {
 
 #define DOMAIN_RK3399(name, pwr, status, req, wakeup)		\
 	DOMAIN(name, pwr, status, req, req, req, wakeup)
-
-#define DOMAIN_RK3528(name, pwr, req, always, wakeup)		\
-	DOMAIN_M_A(name, pwr, pwr, req, req, req, always, wakeup)
 
 #define DOMAIN_RK3568(name, pwr, req, wakeup)		\
 	DOMAIN_M(name, pwr, pwr, req, req, req, wakeup)
@@ -734,26 +715,6 @@ static void rockchip_pd_detach_dev(struct generic_pm_domain *genpd,
 	pm_clk_destroy(dev);
 }
 
-static int rockchip_pd_add_alwasy_on_flag(struct rockchip_pm_domain *pd)
-{
-	int error;
-
-	if (pd->genpd.flags & GENPD_FLAG_ALWAYS_ON)
-		return 0;
-	pd->genpd.flags |= GENPD_FLAG_ALWAYS_ON;
-	if (!rockchip_pmu_domain_is_on(pd)) {
-		error = rockchip_pd_power(pd, true);
-		if (error) {
-			dev_err(pd->pmu->dev,
-				"failed to power on domain '%s': %d\n",
-				pd->genpd.name, error);
-			return error;
-		}
-	}
-
-	return 0;
-}
-
 static int rockchip_pm_add_one_domain(struct rockchip_pmu *pmu,
 				      struct device_node *node)
 {
@@ -872,11 +833,6 @@ static int rockchip_pm_add_one_domain(struct rockchip_pmu *pmu,
 	pd->genpd.flags = GENPD_FLAG_PM_CLK;
 	if (pd_info->active_wakeup)
 		pd->genpd.flags |= GENPD_FLAG_ACTIVE_WAKEUP;
-	if (pd_info->always_on) {
-		error = rockchip_pd_add_alwasy_on_flag(pd);
-		if (error)
-			goto err_unprepare_clocks;
-	}
 	pm_genpd_init(&pd->genpd, NULL,
 		      !rockchip_pmu_domain_is_on(pd) ||
 		      (pd->info->mem_status_mask && !rockchip_pmu_domain_is_mem_on(pd)));
@@ -1228,18 +1184,6 @@ static const struct rockchip_domain_info rk3399_pm_domains[] = {
 	[RK3399_PD_SDIOAUDIO]	= DOMAIN_RK3399("sdioaudio", BIT(31), BIT(31), BIT(29), true),
 };
 
-static const struct rockchip_domain_info rk3528_pm_domains[] = {
-	[RK3528_PD_PMU]		= DOMAIN_RK3528("pmu",  0,      BIT(0), true, false),
-	[RK3528_PD_BUS]		= DOMAIN_RK3528("bus",  0,      BIT(1), true, false),
-	[RK3528_PD_DDR]		= DOMAIN_RK3528("ddr",  0,      BIT(2), true, false),
-	[RK3528_PD_MSCH]	= DOMAIN_RK3528("msch", 0,      BIT(3), true, false),
-	[RK3528_PD_GPU]		= DOMAIN_RK3528("gpu",  BIT(0), BIT(4), true, false),
-	[RK3528_PD_RKVDEC]	= DOMAIN_RK3528("vdec", 0,      BIT(5), true, false),
-	[RK3528_PD_RKVENC]	= DOMAIN_RK3528("venc", 0,      BIT(6), true, false),
-	[RK3528_PD_VO]		= DOMAIN_RK3528("vo",   0,      BIT(7), true, false),
-	[RK3528_PD_VPU]		= DOMAIN_RK3528("vpu",  0,      BIT(8), true, false),
-};
-
 static const struct rockchip_domain_info rk3568_pm_domains[] = {
 	[RK3568_PD_NPU]		= DOMAIN_RK3568("npu",  BIT(1), BIT(2),  false),
 	[RK3568_PD_GPU]		= DOMAIN_RK3568("gpu",  BIT(0), BIT(1),  false),
@@ -1441,17 +1385,6 @@ static const struct rockchip_pmu_info rk3399_pmu = {
 	.domain_info = rk3399_pm_domains,
 };
 
-static const struct rockchip_pmu_info rk3528_pmu = {
-	.pwr_offset = 0x1210,
-	.status_offset = 0x1230,
-	.req_offset = 0x1110,
-	.idle_offset = 0x1128,
-	.ack_offset = 0x1120,
-
-	.num_domains = ARRAY_SIZE(rk3528_pm_domains),
-	.domain_info = rk3528_pm_domains,
-};
-
 static const struct rockchip_pmu_info rk3568_pmu = {
 	.pwr_offset = 0xa0,
 	.status_offset = 0x98,
@@ -1549,10 +1482,6 @@ static const struct of_device_id rockchip_pm_domain_dt_match[] = {
 	{
 		.compatible = "rockchip,rk3399-power-controller",
 		.data = (void *)&rk3399_pmu,
-	},
-	{
-		.compatible = "rockchip,rk3528-power-controller",
-		.data = (void *)&rk3528_pmu,
 	},
 	{
 		.compatible = "rockchip,rk3568-power-controller",
