@@ -7,7 +7,6 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "dt-bindings/usb/pd.h"
 #include "rk3399.dtsi"
-#include "rk3399-op1.dtsi"
 
 / {
 	model = "DG-3399";

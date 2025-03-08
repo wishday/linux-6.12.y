@@ -6,7 +6,6 @@
 #include <dt-bindings/pwm/pwm.h>
 #include <dt-bindings/pinctrl/rockchip.h>
 #include "rk3399.dtsi"
-#include "rk3399-op1.dtsi"
 
 // gpio0:0xac
 // gpio1:0x2f

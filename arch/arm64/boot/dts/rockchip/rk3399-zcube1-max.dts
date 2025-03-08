@@ -5,7 +5,6 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "rk3399.dtsi"
-#include "rk3399-op1.dtsi"
 
 / {
 	model = "ZCuble1 Max";
@@ -15,7 +14,6 @@
 		mmc0 = &sdio0;
 		mmc1 = &sdhci;
 		rtc0 = &hym8563;
-		rtc1 = &rk808_rtc;
 	};
 
 	chosen {
@@ -169,6 +167,7 @@
 			sound-dai = <&es8323>;
 		};
 	};
+
 	/* not amplifier, used as switcher only */
 	headphones_amp: headphones-amp {
 		compatible = "simple-audio-amplifier";
@@ -224,6 +223,10 @@
 	cpu-supply = <&vdd_cpu_b>;
 };
 
+&crypto1 {
+	status = "disabled";
+};
+
 &emmc_phy {
 	status = "okay";
 };
@@ -250,12 +253,11 @@
 };
 
 &hdmi {
- // avdd-0v9-supply = <&vcca0v9_hdmi>;
- // avdd-1v8-supply = <&vcca1v8_hdmi>;
+	avdd-0v9-supply = <&vcca0v9_hdmi>;
+	avdd-1v8-supply = <&vcca1v8_hdmi>;
 	ddc-i2c-bus = <&i2c3>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&hdmi_cec>;
- // pinctrl-0 = <&hdmi_i2c_xfer>;
 	status = "okay";
 };
 
@@ -273,25 +275,26 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 // };
 
 &i2c0 {
-	status = "okay";
-	i2c-scl-rising-time-ns = <180>;
-	i2c-scl-falling-time-ns = <30>;
 	clock-frequency = <400000>;
+	i2c-scl-falling-time-ns = <30>;
+	i2c-scl-rising-time-ns = <180>;
+	status = "okay";
 
 	vdd_cpu_b: syr827@40 {
 		compatible = "silergy,syr827";
 		reg = <0x40>;
+		fcs,suspend-voltage-selector = <1>;
 		regulator-compatible = "fan53555-reg";
 		pinctrl-0 = <&vsel1_pin>;
+		vsel-gpios = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
 		regulator-name = "vdd_cpu_b";
 		regulator-min-microvolt = <712500>;
 		regulator-max-microvolt = <1500000>;
 		regulator-ramp-delay = <1000>;
-		fcs,suspend-voltage-selector = <1>;
 		regulator-always-on;
 		regulator-boot-on;
 		vin-supply = <&vcc5v0_sys>;
-		regulator-initial-mode = <3>;
+
 		regulator-state-mem {
 			regulator-off-in-suspend;
 		};
@@ -300,17 +303,18 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 	vdd_gpu: syr828@41 {
 		compatible = "silergy,syr828";
 		reg = <0x41>;
+		fcs,suspend-voltage-selector = <1>;
 		regulator-compatible = "fan53555-reg";
 		pinctrl-0 = <&vsel2_pin>;
+		vsel-gpios = <&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
 		regulator-name = "vdd_gpu";
 		regulator-min-microvolt = <712500>;
 		regulator-max-microvolt = <1500000>;
 		regulator-ramp-delay = <1000>;
-		fcs,suspend-voltage-selector = <1>;
 		regulator-always-on;
 		regulator-boot-on;
 		vin-supply = <&vcc5v0_sys>;
-		regulator-initial-mode = <3>;
+
 		regulator-state-mem {
 			regulator-off-in-suspend;
 		};
@@ -326,7 +330,7 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 		system-power-controller;
 		wakeup-source;
 		#clock-cells = <1>;
-		clock-output-names = "xin32k", "rtc_clko_wifi";
+		clock-output-names = "rk808-clkout1", "rk808-clkout2";
 
 		vcc1-supply = <&vcc5v0_sys>;
 		vcc2-supply = <&vcc5v0_sys>;
@@ -340,14 +344,6 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 		vcc11-supply = <&vcc5v0_sys>;
 		vcc12-supply = <&vcc3v3_sys>;
 		vddio-supply = <&vcc1v8_pmu>;
-
-		pwrkey {
-				status = "okay";
-		};
-
-		rk808_rtc: rtc {
-				status = "okay";
-		};
 
 		regulators {
 			vdd_center: DCDC_REG1 {
@@ -743,7 +739,9 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 &sdhci {
 	bus-width = <8>;
 	mmc-hs200-1_8v;
+	supports-emmc;
 	non-removable;
+	keep-power-in-suspend;
 	status = "okay";
 };
 
