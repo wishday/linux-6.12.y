@@ -238,14 +238,34 @@
 	clock_in_out = "input";
 	phy-supply = <&vcc3v3_sys>;
 	phy-mode = "rgmii";
+	phy-handle = <&rtl8211f>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&rgmii_pins>;
-	snps,reset-gpio = <&gpio1 RK_PC4 GPIO_ACTIVE_LOW>;
-	snps,reset-active-low;
-	snps,reset-delays-us = <0 10000 50000>;
+	pinctrl-0 = <&rgmii_pins>, <&phy_rstb>;
 	tx_delay = <0x1b>;
 	rx_delay = <0x1a>;
 	status = "okay";
+
+	mdio {
+		compatible = "snps,dwmac-mdio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		rtl8211f: ethernet-phy@1 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <1>;
+
+			/*
+			 * RTL8211F Custom LED Mode B
+			 * LED1 (Green):  Link 10/100/1000
+			 * LED2 (Yellow): Active 10/100/1000
+			 */
+			realtek,led-data = <0xc160>;
+
+			reset-assert-us = <20000>;
+			reset-deassert-us = <100000>;
+			reset-gpios = <&gpio1 RK_PC4 GPIO_ACTIVE_LOW>;
+		};
+	};
 };
 
 &gpu {
@@ -653,6 +673,12 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 		/* detect headphone */
 		hp_det_pin: hp-det-pin {
 			rockchip,pins = <4 RK_PD3 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+	};
+
+	gmac {
+		phy_rstb: phy-rstb {
+			rockchip,pins = <1 RK_PC4 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
