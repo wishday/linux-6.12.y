@@ -11,8 +11,9 @@
 	compatible = "rockchip,rk3399-zcube1-max", "rockchip,rk3399";
 
 	aliases {
-		mmc0 = &sdio0;
+		mmc0 = &sdmmc;
 		mmc1 = &sdhci;
+		mmc2 = &sdio0;
 		rtc0 = &hym8563;
 	};
 
@@ -56,7 +57,7 @@
 		};
 	};
 
-	vcc12v_dcin: vcc12v-dcin {
+	vcc12v_dcin: regulator-vcc12v-dcin {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc12v_dcin";
 		regulator-min-microvolt = <12000000>;
@@ -65,7 +66,7 @@
 		regulator-boot-on;
 	};
 
-	vcc5v0_sys: vcc5v0-sys {
+	vcc5v0_sys: regulator-vcc5v0-sys {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc5v0_sys";
 		regulator-min-microvolt = <5000000>;
@@ -75,7 +76,7 @@
 		vin-supply = <&vcc12v_dcin>;
 	};
 
-	vcc1v8_s0: vcc1v8-s0 { // bsp
+	vcc1v8_s0: regulator-vcc1v8-s0 { // bsp
 		compatible = "regulator-fixed";
 		regulator-name = "vcc1v8_s0";
 		regulator-min-microvolt = <1800000>;
@@ -84,7 +85,7 @@
 		regulator-boot-on;
 	};
 
-	vcc3v3_sys: vcc3v3-sys { // bsp
+	vcc3v3_sys: regulator-vcc3v3-sys { // bsp
 		compatible = "regulator-fixed";
 		regulator-name = "vcc3v3_sys";
 		regulator-min-microvolt = <3300000>;
@@ -94,7 +95,7 @@
 		vin-supply = <&vcc5v0_sys>;
 	};
 
-	vcc5v0_usb_phy: vcc5v0-usb-phy {
+	vcc5v0_usb_phy: regulator-vcc5v0-usb-phy {
 		compatible = "regulator-fixed";
 		enable-active-high;
 		gpio = <&gpio1 RK_PA3 GPIO_ACTIVE_HIGH>;
@@ -104,7 +105,7 @@
 		vin-supply = <&vcc5v0_sys>;
 	};
 
-	vdd_log: vdd-log { // bsp
+	vdd_log: regulator-vdd-log { // bsp
 		compatible = "pwm-regulator";
 		pwms = <&pwm2 0 25000 1>;
 		regulator-name = "vdd_log";
@@ -114,14 +115,14 @@
 		regulator-boot-on;
 	};
 
-	vcc5v0_hdmi: vcc5v0-hdmi-regulator {
+	vcc5v0_hdmi: regulator-vcc5v0-hdmi-regulator {
 		compatible = "regulator-fixed";
-		enable-active-low;
 		gpio = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>; // bsp
 		pinctrl-names = "default";
-		pinctrl-0 = <&hdmi_power>;
+		pinctrl-0 = <&hdmi_power_en>;
 		regulator-name = "vcc5v0_hdmi";
 		regulator-always-on;
+		regulator-boot-on;
 	};
 
 	sdio_pwrseq: sdio-pwrseq {
@@ -286,7 +287,6 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 		fcs,suspend-voltage-selector = <1>;
 		regulator-compatible = "fan53555-reg";
 		pinctrl-0 = <&vsel1_pin>;
-		vsel-gpios = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
 		regulator-name = "vdd_cpu_b";
 		regulator-min-microvolt = <712500>;
 		regulator-max-microvolt = <1500000>;
@@ -306,7 +306,6 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 		fcs,suspend-voltage-selector = <1>;
 		regulator-compatible = "fan53555-reg";
 		pinctrl-0 = <&vsel2_pin>;
-		vsel-gpios = <&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
 		regulator-name = "vdd_gpu";
 		regulator-min-microvolt = <712500>;
 		regulator-max-microvolt = <1500000>;
@@ -343,13 +342,13 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 		vcc10-supply = <&vcc5v0_sys>;
 		vcc11-supply = <&vcc5v0_sys>;
 		vcc12-supply = <&vcc3v3_sys>;
-		vddio-supply = <&vcc1v8_pmu>;
+		vddio-supply = <&vcc_1v8>;
 
 		regulators {
 			vdd_center: DCDC_REG1 {
 				regulator-name = "vdd_center";
 				regulator-min-microvolt = <750000>;
-				regulator-max-microvolt = <1350000>;
+				regulator-max-microvolt = <13500000>;
 				regulator-ramp-delay = <6001>;
 				regulator-always-on;
 				regulator-boot-on;
@@ -398,7 +397,8 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-state-mem {
-					regulator-off-in-suspend;
+					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <1800000>;
 				};
 			};
 
@@ -409,12 +409,13 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-state-mem {
-					regulator-off-in-suspend;
+					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <1800000>;
 				};
 			};
 
-			vcc1v8_pmu: LDO_REG3 {
-				regulator-name = "vcc1v8_pmu";
+			vcca_1v8: LDO_REG3 {
+				regulator-name = "vcca_1v8";
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
 				regulator-always-on;
@@ -437,14 +438,15 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 				};
 			};
 
-			vcca3v0_codec: LDO_REG5 {
-				regulator-name = "vcca3v0_codec";
+			vcca3v0_sd: LDO_REG5 {
+				regulator-name = "vcca3v0_sd";
 				regulator-min-microvolt = <3000000>;
 				regulator-max-microvolt = <3000000>;
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-state-mem {
-					regulator-off-in-suspend;
+					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <3000000>;
 				};
 			};
 
@@ -467,7 +469,8 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-state-mem {
-					regulator-off-in-suspend;
+					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <900000>;
 				};
 			};
 
@@ -488,7 +491,7 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-state-mem {
-					regulator-off-in-suspend;
+					regulator-on-in-suspend;
 				};
 			};
 
@@ -497,7 +500,7 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-state-mem {
-					regulator-off-in-suspend;
+					regulator-on-in-suspend;
 				};
 			};
 		};
@@ -529,6 +532,7 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 	};
 };
 
+/* RGB Light */
 &i2c2 {
 	i2c-scl-rising-time-ns = <300>;
 	i2c-scl-falling-time-ns = <15>;
@@ -708,9 +712,9 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 	};
 
 	hdmi {
-		hdmi_power: hdmi-power {
+		hdmi_power_en: hdmi-power-en {
 			rockchip,pins =
-				<1 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>; // bsp
+				<1 RK_PC6 RK_FUNC_GPIO &pcfg_pull_up>; // bsp
 		};
 	};
 
@@ -723,7 +727,7 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 
 &pwm0 {
 	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
 
 &pwm2 {
@@ -758,7 +762,6 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 	sd-uhs-sdr104;
 	#address-cells = <1>;
 	#size-cells = <0>;
-	// status = "okay";
 	status = "disabled";
 
 	brcmf: wifi@1 {
@@ -769,7 +772,6 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 		interrupt-names = "host-wake";
 		pinctrl-names = "default";
 		pinctrl-0 = <&wifi_host_wake_l>;
-		// status = "okay";
 		status = "disabled";
 	};
 };
@@ -797,6 +799,7 @@ hdmi-5v-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
 	rockchip,hw-tshut-mode = <1>;
 	/* tshut polarity 0:LOW 1:HIGH */
 	rockchip,hw-tshut-polarity = <1>;
+	rockchip,hw-tshut-temp = <110000>;
 	status = "okay";
 };
 
