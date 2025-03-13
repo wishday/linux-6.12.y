@@ -75,6 +75,13 @@
 		compatible = "ethernet-phy-ieee802.3-c22";
 		phy-supply = <&vcc3v3_sys>;
 		reg = <1>;
+
+		/*
+		 * RTL8211F Custom LED Mode B
+		 * LED1 (Green):  Link 10/100/1000
+		 * LED2 (Yellow): Active 10/100/1000
+		 */
+		realtek,led-data = <0xc160>;
 	};
 };
 
@@ -83,6 +90,13 @@
 		compatible = "ethernet-phy-ieee802.3-c22";
 		phy-supply = <&vcc3v3_sys>;
 		reg = <1>;
+
+		/*
+		 * RTL8211F Custom LED Mode B
+		 * LED1 (Green):  Link 10/100/1000
+		 * LED2 (Yellow): Active 10/100/1000
+		 */
+		realtek,led-data = <0xc160>;
 	};
 };
 
