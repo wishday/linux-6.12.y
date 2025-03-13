@@ -246,7 +246,7 @@
 		     &gmac0_rgmii_bus>;
 	snps,reset-gpio = <&gpio2 RK_PD3 GPIO_ACTIVE_LOW>;
 	snps,reset-active-low;
-	snps,reset-delays-us = <0 50000 200000>;
+	snps,reset-delays-us = <0 20000 100000>;
 	tx_delay = <0x2e>;
 	rx_delay = <0x28>;
 	phy-handle = <&rgmii_phy0>;
@@ -267,7 +267,7 @@
 		     &gmac1m1_rgmii_bus>;
 	snps,reset-gpio = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
 	snps,reset-active-low;
-	snps,reset-delays-us = <0 50000 200000>;
+	snps,reset-delays-us = <0 20000 100000>;
 	tx_delay = <0x42>;
 	rx_delay = <0x25>;
 	phy-handle = <&rgmii_phy1>;
@@ -601,26 +601,34 @@
 };
 
 &mdio0 {
-	rgmii_phy0: ethernet-phy@0 {
+	rgmii_phy0: ethernet-phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
 		phy-supply = <&vcc3v3_sys>;
-		reg = <0x0>;
+
+		/*
+		 * RTL8211F Custom LED Mode B
+		 * LED1 (Green):  Link 10/100/1000
+		 * LED2 (Yellow): Active 10/100/1000
+		 */
+		realtek,led-data = <0xc160>;
 	};
 };
 
 &mdio1 {
-	rgmii_phy1: ethernet-phy@0 {
+	rgmii_phy1: ethernet-phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
 		phy-supply = <&vcc3v3_sys>;
-		reg = <0x0>;
+
+		/*
+		 * RTL8211F Custom LED Mode B
+		 * LED1 (Green):  Link 10/100/1000
+		 * LED2 (Yellow): Active 10/100/1000
+		 */
+		realtek,led-data = <0xc160>;
 	};
 };
-
-/*
-&gic {
-	mbi-ranges = <202 56>, <264 56>;
-};
-*/
 
 &pcie2x1 {
 	reset-gpios = <&gpio2 RK_PD6 GPIO_ACTIVE_HIGH>;
